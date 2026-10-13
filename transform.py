@@ -11,9 +11,9 @@ OUTPUT_FILE = PROCESSED_DIR / "weather_clean.csv"
 
 def load_raw_data(file_path: Path) -> dict:
     if not file_path.exists():
-        raise FileNotFoundError {
+        raise FileNotFoundError (
             f"I couldn't find {file_path}. Run extract.py first"
-        }
+        )
 
     with file_path.open("r", encoding="utf-8") as f:
         return json.load(f)
