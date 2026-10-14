@@ -18,9 +18,8 @@ def load_raw_data(file_path: Path) -> dict:
     with file_path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
-
-def tranform_weather_data(raw_data: dict) -> pd.DataFrame:
-    daily = raw_data["dayli"]
+def transform_weather_data(raw_data: dict) -> pd.DataFrame:
+    daily = raw_data["daily"]
 
     df = pd.DataFrame(
         {
@@ -49,4 +48,16 @@ def tranform_weather_data(raw_data: dict) -> pd.DataFrame:
 def save_clean_data(df: pd.DataFrame, output_path: Path) -> None:
     df.to_csv(output_path, index=False)
     print(f"Clean data saved at: {output_path}")
+
+
+def main() -> None:
+    raw_data = load_raw_data(RAW_FILE)
+    df = transform_weather_data(raw_data)
+    save_clean_data(df, OUTPUT_FILE)
+
+    print("\nPreview")
+    print(df)
+
+if __name__ == "__main__":
+    main()
 
