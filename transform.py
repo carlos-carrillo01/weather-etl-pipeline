@@ -44,3 +44,9 @@ def tranform_weather_data(raw_data: dict) -> pd.DataFrame:
     df = df.sort_values("date").reset_index(drop=True)
 
     return df
+
+
+def save_clean_data(df: pd.DataFrame, output_path: Path) -> None:
+    df.to_csv(output_path, index=False)
+    print(f"Clean data saved at: {output_path}")
+
