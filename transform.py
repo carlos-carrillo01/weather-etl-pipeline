@@ -17,3 +17,47 @@ def load_raw_data(file_path: Path) -> dict:
 
     with file_path.open("r", encoding="utf-8") as f:
         return json.load(f)
+
+def transform_weather_data(raw_data: dict) -> pd.DataFrame:
+    daily = raw_data["daily"]
+
+    df = pd.DataFrame(
+        {
+            "date": daily["time"],
+            "temp_max_c": daily["temperature_2m_max"],
+            "temp_min_c": daily["temperature_2m_min"],
+            "precipitation_mm": daily["precipitation_sum"],
+        }
+    )
+
+    df["date"] = pd.to_datetime(df["date"]);
+
+    # Convert date to date type
+    if df.empty:
+        raise ValueError("The API didn't return data to transform")
+
+    if df[["temp_max_c", "temp_min_c", "precipitation_mm"]].isnull().any().any():
+        print("Warning: there are null values in the data")
+
+    # Sort by date
+    df = df.sort_values("date").reset_index(drop=True)
+
+    return df
+
+
+def save_clean_data(df: pd.DataFrame, output_path: Path) -> None:
+    df.to_csv(output_path, index=False)
+    print(f"Clean data saved at: {output_path}")
+
+
+def main() -> None:
+    raw_data = load_raw_data(RAW_FILE)
+    df = transform_weather_data(raw_data)
+    save_clean_data(df, OUTPUT_FILE)
+
+    print("\nPreview")
+    print(df)
+
+if __name__ == "__main__":
+    main()
+
