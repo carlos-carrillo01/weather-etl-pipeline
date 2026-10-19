@@ -3,6 +3,10 @@ from pathlib import Path
 
 import pandas as pd
 
+from logger_config import configure_logger
+
+logger = configure_logger(__name__)
+
 RAW_DIR = Path("data/raw")
 PROCESSED_DIR = Path("data/processed")
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
@@ -31,6 +35,19 @@ def transform_weather_data(raw_data: dict) -> pd.DataFrame:
     daily = raw_data["daily"]
     city = raw_data["city"]
 
+    logger.info("Transforming data for: %s", city)
+
+    required_daily_keys = {
+        "time",
+        "temperature_2m_max",
+        "temperature_2m_min",
+        "precipitation_sum",
+    }
+    missing_keys = required_daily_keys - set(daily.keys())
+    if missing_keys:
+        logger.error("Missing keys in daily data for %s: %s", city, missing_keys)
+        raise ValueError(f"Missing daily keys: {missing_keys}")
+
     df = pd.DataFrame(
         {
             "city": city,
@@ -41,20 +58,36 @@ def transform_weather_data(raw_data: dict) -> pd.DataFrame:
         }
     )
 
-    df["date"] = pd.to_datetime(df["date"])
-
     if df.empty:
         raise ValueError(f"City {city} returned no data.")
 
-    invalid_temperatures = df["temp_max_c"] < df["temp_min_c"]
+    null_counts = df[["date", "temp_max_c", "temp_min_c", "precipitation_mm"]].isnull().sum()
+    if null_counts.any():
+        logger.warning("Null values in %s: %s", city, null_counts.to_dict())
+        df = df.dropna(
+            subset=["date", "temp_max_c", "temp_min_c", "precipitation_mm"]
+        ).reset_index(drop=True)
 
+    duplicates = df.duplicated(subset=["date"]).sum()
+    if duplicates > 0:
+        logger.error("City %s has %d duplicate dates.", city, duplicates)
+        raise ValueError(f"Duplicate dates in {city}.")
+
+    invalid_temperatures = df["temp_max_c"] < df["temp_min_c"]
     if invalid_temperatures.any():
+        logger.error("Invalid temperatures in %s.", city)
         raise ValueError(
-            f"City {city} has a maximum temperature lower than the minimum."
+            f"Maximum temperature is lower than minimum temperature in {city}."
         )
 
-    return df
+    negative_precipitation = df["precipitation_mm"] < 0
+    if negative_precipitation.any():
+        logger.error("Negative precipitation in %s.", city)
+        raise ValueError(f"Precipitation cannot be negative in {city}.")
 
+    df["date"] = pd.to_datetime(df["date"])
+
+    return df
 
 def transform_all_files() -> pd.DataFrame:
     raw_data_list = load_raw_files()

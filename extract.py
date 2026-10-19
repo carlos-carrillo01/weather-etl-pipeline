@@ -5,6 +5,11 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+from logger_config import configure_logger
+
+
+logger = configure_logger(__name__)
+
 load_dotenv()
 
 RAW_DIR = Path("data/raw")
@@ -42,20 +47,24 @@ def main() -> None:
         city = city.strip()
 
         if city not in CITIES:
-            print(f"City not configured: {city}")
+            logger.warning("City not configured: %s", city)
             continue
 
-        print(f"Extracting data from {city}")
+        logger.info("Extracting data from: %s", city)
+        
+        try:
+            data = extract_city_weather(city, CITIES[city])
+        except requests.RequestException as error:
+            logger.error("Error querying API for %s: %s", city, error)
+            continue
 
-        data = extract_city_weather(city, CITIES[city])
 
         output_file = RAW_DIR / f"{city.lower().replace(' ', '_')}_weather_raw.json"
 
         with output_file.open("w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
-        print(f"Data saved in: {output_file}")
-
+        logger.info("Data saved in: %s", output_file)
 
 if __name__ == "__main__":
     main()

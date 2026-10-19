@@ -20,3 +20,5 @@ env/
 # Temporary data
 data/
 *.log
+
+pipeline.log
