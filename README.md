@@ -32,7 +32,7 @@ Analytical queries
 1. Clone the repository:
 
 ```bash
-git clone <your-repo>
+git clone https://github.com/carlos-carrillo01/weather-etl-pipeline.git
 cd weather-mini-pipeline
 ```
 
